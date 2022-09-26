@@ -1,0 +1,4 @@
+venv/
+api_explorer/node_modules
+backend/build
+backend/django_nearly_solid.egg-info

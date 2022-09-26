@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RPC Details</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/event-source-polyfill@1.0.25/src/eventsource.js"></script>
+    <script src="/js/"></script>
+    <style>
+        *, html {
+            font-family: 'Monospaced', monospace;
+        }
+
+        body {
+            max-width: 1024px;
+            margin: auto;
+        }
+
+        h1, h2, h3, h4, h5, p {
+            margin: 0;
+        }
+
+        h3 {
+            margin-top: 4px;
+        }
+
+        p {
+            padding-bottom: 4px;
+        }
+
+        .argument {
+            padding-left: 8px;
+        }
+
+        pre {
+            background: #f1f1f1;
+            font-family: monospace;
+            padding: 8px 16px;
+        }
+
+        .service + .service {
+            margin-top: 16px;
+        }
+
+        .method + .method {
+            margin-top: 8px;
+        }
+
+        input[type=text], input[type=number], input[type=file] {
+            display: block;
+            background: transparent;
+            border-radius: 4px;
+            border-color: #aaa;
+            border-width: 1px;
+        }
+
+        .argument-field {
+            padding-left: 8px;
+            padding-bottom: 8px;
+        }
+
+        .argument-field + .argument-field {
+            border-top: 1px dashed #aaa !important;
+        }
+
+        .method {
+            padding: 8px;
+            background: #f8fbff;
+        }
+
+        .method + .method {
+        }
+
+        .method__description {
+            font-size: 14px;
+        }
+
+        .pre-error {
+            background: #fff5f5;
+        }
+    </style>
+</head>
+<body>
+
+{% raw %}
+<div id="app">
+    <h1>
+        API
+        <button @click="showBlocks.api = !showBlocks.api" style="float: right; position: relative; top: 12px;">
+            <span v-if="showBlocks.api">Hide</span>
+            <span v-else>Show</span>
+        </button>
+    </h1>
+    <div v-show="showBlocks.api" v-for="(service, serviceName) in servicesData" class="service">
+        <h2 class="service__title">services.{{ serviceName }}</h2>
+        <div v-for="(method, methodIndex) in service.methods" class="method">
+            <div class="method__title">
+                <button @click="showStates[`${serviceName}.${method.name}`] = !showStates[`${serviceName}.${method.name}`]"
+                        style="float: right; position: relative; top: 0;">
+                    <template v-if="showStates[`${serviceName}.${method.name}`]">Close</template>
+                    <template v-else>Open</template>
+                </button>
+                <h3 class="method__name">
+                    function
+                    {{ method.name }}(<template v-for="(argument, index) in method.arguments"><span>{{ argument.name }}: {{ argument.js_type }}</span><span
+                            v-if="index != Object.keys(method.arguments).length - 1">, </span></template>)<span v-if="method.return_js_type !== 'undefined'">: {{ method.return_js_type }}</span>
+                </h3>
+                <p class="method__description">
+                    <template v-for="line in method.description_lines">
+                        {{ line }}<br>
+                    </template>
+                </p>
+            </div>
+            <div class="method__body" v-show="showStates[`${serviceName}.${method.name}`]">
+                <h4 v-if="method.arguments.length">Arguments:</h4>
+                <div v-if="method.arguments.length"
+                     v-for="(argument, argumentIndex) in method.arguments" class="argument">
+                    - <b>{{ argument.name }}</b>: {{ argument.js_type }}
+                </div>
+                <p style="font-size: 16px">
+                    <b>
+                        Returns:
+                        <a :href="'#DTO__' + method.return_js_type"
+                           v-if="isArgumentDTO({ type: method.return_js_type })">{{ method.return_js_type }}</a>
+                        <template v-else>{{ method.return_js_type }}</template>
+                    </b>
+                    <template v-if="method.returns_description">
+                        - <i>{{ method.returns_description }}</i>
+                    </template>
+                </p>
+                <h5>Input:</h5>
+                <div v-for="(argument, argumentIndex) in method.arguments" class="argument-field">
+                    <div v-if="isArgumentDTO(argument)">
+                        <a :href="'#DTO__' + argument.js_type">{{ argument.name }} [{{ argument.js_type }}]</a>:
+                        <div style="margin-left: 8px" v-for="prop in getArgumentDTO(argument).props">
+                            {{ prop.name }} [{{ prop.js_type }}]:
+                            <input v-model="methodsArguments[`${serviceName}.${method.name}`][argument.name][prop.name]"
+                                   v-if="prop.js_type === 'string'" type="text" class="input-text"
+                                   placeholder="Enter value..."/>
+                            <input v-model="methodsArguments[`${serviceName}.${method.name}`][argument.name][prop.name]"
+                                   v-else-if="prop.js_type === 'number'" type="number" class="input-text"
+                                   placeholder="Enter number..."/>
+                            <input v-model="methodsArguments[`${serviceName}.${method.name}`][argument.name][prop.name]"
+                                   v-else-if="prop.js_type === 'boolean'" type="checkbox"/>
+                            <input v-else-if="prop.js_type === 'Blob'" type="file"
+                                   @change="onFileChange($event, serviceName, method.name, argument.name, prop.name)"
+                                   class="input-text"/>
+                            <div v-else>BAD</div>
+                        </div>
+                    </div>
+                    <template v-else>
+                        {{ argument.name }} [{{ argument.js_type }}]:
+                        <input v-model="methodsArguments[`${serviceName}.${method.name}`][argument.name]"
+                               v-if="argument.js_type === 'string'" type="text" class="input-text"
+                               placeholder="Enter value..."/>
+                        <input v-model="methodsArguments[`${serviceName}.${method.name}`][argument.name]"
+                               v-else-if="argument.js_type === 'number'" type="number" class="input-text"
+                               placeholder="Enter number..."/>
+                        <input v-model="methodsArguments[`${serviceName}.${method.name}`][argument.name]"
+                               v-else-if="argument.js_type === 'boolean'" type="checkbox"/>
+                        <input v-else-if="argument.js_type === 'Blob'" type="file" class="input-text"
+                               @change="onFileChange($event, serviceName, method.name, argument.name)"/>
+                        <div v-else>BAD INPUT</div>
+                    </template>
+                </div>
+                <button @click="executeMethod(serviceName, method.name)">Execute method</button>
+                <div class="method__output">
+                    <h5>Output:</h5>
+                    <pre>{{ this.methodsOutputs[`${serviceName}.${method.name}`] }}</pre>
+                    <h5>Errors</h5>
+                    <pre class="pre-error">{{ this.methodsErrors[`${serviceName}.${method.name}`] }}</pre>
+                    <h5>Image:</h5>
+                    <img :src="methodsImages[`${serviceName}.${method.name}`]" style="display: block; max-width: 100%">
+                </div>
+            </div>
+        </div>
+    </div>
+    <h1>
+        Data Structures
+        <button @click="showBlocks.dtos = !showBlocks.dtos" style="float: right; position: relative; top: 12px;">
+            <span v-if="showBlocks.dtos">Hide</span>
+            <span v-else>Show</span>
+        </button>
+    </h1>
+    <div v-show="showBlocks.dtos" :id="`DTO__` + entity.name" v-for="(entity, entityIndex) in entitiesData" class="entity">
+        <h2 class="entity__title">
+            <a :href="'#DTO__' + entity.name">{{ entity.name }}</a>
+        </h2>
+        <pre style="white-space: pre-line">
+            <template v-for="prop in entity.props">{{ prop.title }} [{{ prop.name }}]: {{ prop.js_type }}
+            </template></pre>
+    </div>
+    <h1>
+        Events
+        <button @click="showBlocks.events = !showBlocks.events" style="float: right; position: relative; top: 12px;">
+            <span v-if="showBlocks.events">Hide</span>
+            <span v-else>Show</span>
+        </button>
+    </h1>
+    <div v-show="showBlocks.events" v-for="(event, eventName) in events">
+        <h2 class="event__title">
+            <span>{{ eventName }}</span>
+            <br>
+            <button @click="toggleSubscribe(eventName)">
+                <span v-if="!event.subscribed">Subscribe</span>
+                <span v-else>Unsubscribe</span>
+            </button>
+        </h2>
+        <pre style="white-space: pre-line" v-show="event.output">{{ event.output }}</pre>
+    </div>
+</div>
+{% endraw %}
+
+<script>
+const {createApp} = Vue
+
+let eventsDefaultState = {};
+for (const messageType in MessagesTypes) {
+    eventsDefaultState[messageType] = {
+        subscribed: false,
+        output: '',
+    };
+}
+
+createApp({
+    data() {
+        return {
+            events: eventsDefaultState,
+            showBlocks: {
+                api: true,
+                dtos: true,
+                events: true,
+            },
+            showStates: {},
+            methodsArguments: {},
+            methodsOutputs: {},
+            methodsImages: {},
+            methodsErrors: {},
+            methodsLoadings: {},
+        }
+    },
+    computed: {
+        servicesData() {
+            return servicesData;
+        },
+        entitiesData() {
+            return entitiesData;
+        },
+    },
+    methods: {
+        isArgumentDTO(argument) {
+            return argument.type.endsWith('DTO');
+        },
+        getArgumentDTO(argument) {
+            if (!argument.type.endsWith('DTO')) return null;
+            for (const dtoKey in this.entitiesData) {
+                const dto = this.entitiesData[dtoKey];
+                if (dto.name === argument.type) {
+                    return dto;
+                }
+            }
+            return null;
+        },
+        async executeMethod(serviceName, methodName) {
+            this.methodsOutputs[`${serviceName}.${methodName}`] = '';
+            this.methodsImages[`${serviceName}.${methodName}`] = '';
+            this.methodsErrors[`${serviceName}.${methodName}`] = '';
+            const method = services[serviceName][methodName];
+            const args = this.methodsArguments[`${serviceName}.${methodName}`];
+            const argsList = [];
+            for (const serviceName_ in this.servicesData) {
+                if (serviceName_ !== serviceName) continue;
+                const service = this.servicesData[serviceName];
+                for (const methodIndex in service.methods) {
+                    const method = service.methods[methodIndex];
+                    if (method.name !== methodName) continue;
+                    for (const arg of method.arguments) {
+                        if (args[arg.name] instanceof File) {
+                            argsList.push(args[arg.name]);
+                        } else if (typeof args[arg.name] === 'object') {
+                            argsList.push({...args[arg.name]});
+                        } else {
+                            argsList.push(args[arg.name]);
+                        }
+                    }
+                }
+            }
+            try {
+                const result = await method(...argsList);
+                if (result instanceof Blob) {
+                    const base64Image = await getBase64Image(result);
+                    this.methodsImages[`${serviceName}.${methodName}`] = base64Image;
+                } else {
+                    this.methodsOutputs[`${serviceName}.${methodName}`] = JSON.stringify(result, null, 4);
+                }
+            } catch (error) {
+                if (!(error instanceof ServerLogicError)) {
+                    throw error;
+                }
+                this.methodsErrors[`${serviceName}.${methodName}`] = JSON.stringify({
+                    name: error.name,
+                    code: error.code,
+                    data: error.data,
+                    cls: error.cls,
+                }, null, 4);
+            }
+        },
+        onFileChange(e, serviceName, methodName, argumentName, argumentDataKey = null) {
+            const file = e.target.files[0];
+            if (argumentDataKey) {
+                this.methodsArguments[`${serviceName}.${methodName}`][argumentName][argumentDataKey] = file;
+            } else {
+                this.methodsArguments[`${serviceName}.${methodName}`][argumentName] = file;
+            }
+            console.log(this.methodsArguments);
+        },
+        subscribe(eventName) {
+            messages.subscribe(eventName, (data) => {
+                const log = `<<<<<<<<<\n\n${JSON.stringify(data)}\n\n`;
+                console.log('GOT LOG', log);
+                this.events[eventName].output += log;
+            });
+            this.events[eventName].subscribed = true;
+        },
+        describe(eventName) {
+            messages.describe(eventName);
+            this.events[eventName].subscribed = false;
+        },
+        toggleSubscribe(eventName) {
+            if (this.events[eventName].subscribed) {
+                this.describe(eventName);
+            } else {
+                this.subscribe(eventName);
+            }
+        },
+    },
+    created() {
+        for (const serviceName in this.servicesData) {
+            const service = this.servicesData[serviceName];
+            for (const methodIndex in service.methods) {
+                const method = service.methods[methodIndex];
+                this.showStates[`${serviceName}.${method.name}`] = false;
+                this.methodsOutputs[`${serviceName}.${method.name}`] = '';
+                this.methodsImages[`${serviceName}.${method.name}`] = '';
+                this.methodsErrors[`${serviceName}.${method.name}`] = '';
+                this.methodsLoadings[`${serviceName}.${method.name}`] = false;
+
+                const methodsArguments = {};
+                for (const argIndex in method.arguments) {
+                    const arg = method.arguments[argIndex];
+                    if (this.isArgumentDTO(arg)) {
+                        methodsArguments[arg.name] = {};
+                        const dto = this.getArgumentDTO(arg);
+                        const dtoArguments = {};
+                        for (const propIndex in dto.props) {
+                            const prop = dto.props[propIndex];
+                            if (prop.js_type === 'string') {
+                                dtoArguments[prop.name] = '';
+                            } else if (prop.js_type === 'number') {
+                                dtoArguments[prop.name] = 0;
+                            } else if (prop.js_type === 'boolean') {
+                                dtoArguments[prop.name] = false;
+                            }
+                        }
+                        methodsArguments[arg.name] = dtoArguments;
+                    } else if (arg.js_type === 'string') {
+                        methodsArguments[arg.name] = '';
+                    } else if (arg.js_type === 'number') {
+                        methodsArguments[arg.name] = 0;
+                    } else if (arg.js_type === 'boolean') {
+                        methodsArguments[arg.name] = false;
+                    }
+                }
+                this.methodsArguments[`${serviceName}.${method.name}`] = methodsArguments;
+            }
+        }
+    },
+}).mount('#app');
+</script>
+
+</body>
+</html>
