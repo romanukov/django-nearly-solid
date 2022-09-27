@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.2.1'
+version = '0.2.2'
 
 packages = find_packages()
 
@@ -20,5 +20,6 @@ setup(
     requires=[
         'django',
         'pydantic',
-    ]
+    ],
+    url="https://github.com/romanukov/django-nearly-solid",
 )
