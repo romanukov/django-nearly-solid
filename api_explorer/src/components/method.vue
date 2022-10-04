@@ -35,11 +35,12 @@
                           :arg_name="argument.name"
                           style="display: inline"
                           :type="argument.type"
+                          v-model="args[argument.name]"
                           :is_generic="argument.is_generic"
                           :js_type="argument.type.name" />
                 <br>
             </template>
-            <button @click="executeMethod(serviceName, method.name)">Execute method</button>
+            <button class="execute-button" @click="executeMethod(serviceName, method.name)">Execute method</button>
             <div class="method__output">
                 <h5>Output:</h5>
                 <pre></pre>
@@ -51,23 +52,38 @@
 <script>
 import Argument from "@/components/argument";
 import TypeName from "@/components/type-name";
+import {getDefaultValueForType} from "@/common/utils";
+
 
 export default {
     name: "method",
     data: () => ({
         showDetails: false,
+        args: {},
     }),
     props: {
         method: Object,
     },
-    methods: {},
+    methods: {
+        defaultValueFor() {},
+    },
     components: {
         Argument,
         TypeName,
     },
+    created() {
+        console.log('method', this.method);
+        for (const argument of this.method.args) {
+            this.args[argument.name] = getDefaultValueForType(argument.type)
+        }
+    }
 }
 </script>
 
-<style scoped>
-
+<style lang="stylus">
+.execute-button
+    display block
+    width 100%
+    margin 16px 0
+    padding 8px 0
 </style>

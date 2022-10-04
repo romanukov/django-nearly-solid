@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from ns.autoapi.entities import Result
 from ns.autoapi.presentation import present_data
-from ns.core.entities.types import TypeData
+from ns.application_layer.entities.types import TypeData
 
 
 def handle_result(fn: Callable) -> Callable:

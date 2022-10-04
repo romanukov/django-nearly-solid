@@ -39,6 +39,7 @@
     <option name="TEMPLATE_FOLDERS">
       <list>
         <option value="$MODULE_DIR$/backend/examples/simple_shop/shop/templates" />
+        <option value="$MODULE_DIR$/backend/ns/autoapi/templates" />
       </list>
     </option>
   </component>

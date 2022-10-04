@@ -1,9 +1,9 @@
 from ns.autoapi.entities import Request
 from ns.autoapi.errors import AutoapiError, ErrorCodes
-from ns.core import registry
-from ns.core.entities.application import ApplicationData
-from ns.core.serialization.application import serialize_application
-from ns.core.typings import EntityMeta
+from ns.application_layer import registry
+from ns.application_layer.entities.application import ApplicationData
+from ns.application_layer.serialization.application import serialize_application
+from ns.application_layer.typings import EntityMeta
 
 
 class AutoapiService:

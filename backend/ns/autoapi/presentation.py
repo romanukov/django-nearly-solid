@@ -6,7 +6,7 @@ from pydantic import BaseModel as PydanticModel
 from django.db.models import Model as DjangoModel
 
 from ns.autoapi.errors import ErrorCodes
-from ns.core.typings import Entity
+from ns.application_layer.typings import Entity
 from ns.errors import Error
 
 

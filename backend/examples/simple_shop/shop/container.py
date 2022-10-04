@@ -7,5 +7,5 @@ from adapters.image_storage import FileSystemImageStorage
 
 
 class ShopContainer(Container):
-    auth_provider: IAuthProvider = DjangoAuthProvider
+    auth_provider: IAuthProvider = DjangoAuthProvider()
     images_storage: IImageStorage = FileSystemImageStorage()

@@ -28,14 +28,13 @@
 </template>
 
 <script>
-import PrimitiveInput from "@/components/inputs/primitive-input";
 import AutoWidthInput from "@/components/inputs/components/auto-width-input";
 import TypeSelect from "@/components/inputs/components/type-select";
 
 
 export default {
     name: "object-input",
-    components: {AutoWidthInput, PrimitiveInput, TypeSelect, Argument: () => import("@/components/argument")},
+    components: {AutoWidthInput, TypeSelect, Argument: () => import("@/components/argument")},
     props: {
         show_name: Boolean,
         indent: Number,

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 
 from ns.auth import authorized_user
-from ns.core.dataclasses import MethodData
+from ns.application_layer.dataclasses import MethodData
 
 
 def get_service_method(service_name: str, method_name: str) -> (Callable, MethodData):

@@ -1,7 +1,28 @@
 <template>
-    <div style="display: inline"><dto-input
+    <div style="display: inline">
+        <span v-if="show_name">{{ name }} [{{ typeName }}]:</span>
+        <string-input
+            :value="value"
+            @input="() => $emit('input', $event.target.value)"
+            v-if="typeName === 'string'" />
+        <number-input
+            :value="value" @input="(value) => $emit('input', value)"
+            v-model.number="value"
+            v-else-if="typeName === 'number'" />
+        <boolean-input
+            :value="value" @input="(value) => $emit('input', value)"
+            v-else-if="typeName === 'boolean'" />
+        <file-input
+            v-else-if="typeName === 'Blob'"
+            :value="value"
+            @change="$emit('input', $event.target.files[0])"/>
+        <file-input
+            v-else-if="typeName === 'Image'"
+            :value="value"
+            @change="$emit('input', $event.target.files[0])"/>
+        <dto-input
             :show_name="show_name"
-            v-if="isDTO"
+            v-else-if="isDTO"
             :type="type"
             @dtoInput="value = $event"
             :dto="getDTO" />
@@ -21,18 +42,16 @@
             :type="type"
             :generic_type="generic_type"
             @input="value = $event" />
-        <primitive-input
-            :show_name="show_name"
-            v-else
-            :name="arg_name"
-            :js_type="type"
-            v-model="value" /></div>
-
+        <span v-else style="color: #b92a5c">!!!No input for {{ typeName }}!!!</span>
+    </div>
 </template>
 
 <script>
+import StringInput from "@/components/inputs/string-input";
+import NumberInput from "@/components/inputs/number-input";
+import BooleanInput from "@/components/inputs/boolean-input";
+import FileInput from "@/components/inputs/file-input";
 import dtoInput from "@/components/inputs/dtos-input";
-import primitiveInput from "@/components/inputs/primitive-input";
 import ObjectInput from "@/components/inputs/object-input";
 import {typesResolves} from "@/types";
 
@@ -77,9 +96,12 @@ export default {
         },
     },
     components: {
+        StringInput,
+        NumberInput,
+        BooleanInput,
+        FileInput,
         ObjectInput,
         dtoInput,
-        primitiveInput,
     },
 }
 </script>

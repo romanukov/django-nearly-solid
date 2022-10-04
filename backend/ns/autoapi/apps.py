@@ -1,4 +1,4 @@
-from ns.core.apps import NSAppConfig
+from ns.application_layer.apps import NSAppConfig
 
 
 class AutoApiConfig(NSAppConfig):

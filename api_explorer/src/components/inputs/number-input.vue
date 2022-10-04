@@ -1,7 +1,8 @@
 <template>
     <span style="padding-left: 1ch">
-        <auto-width-input :min-size="15" v-bind="$props" :value="value" @input="v => $emit('input', v)"
-               type="number" class="input-text" placeholder="Enter number..."/>
+        <auto-width-input :min-size="15" v-bind="$props"
+                          :value="value" @input="value => $emit('input', value)"
+                          type="number" class="input-text" placeholder="Enter number..."/>
     </span>
 </template>
 

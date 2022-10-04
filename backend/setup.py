@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
-version = '0.2.2'
+version = '0.3.1'
 
 packages = find_packages()
 
-with open("../README.md", "r") as fh:
-    long_description = fh.read()
+with open("../README.md", "r") as file:
+    long_description = file.read()
 
 setup(
     name='django-nearly-solid',
